@@ -1,0 +1,64 @@
+﻿.controls {
+    width: 46%;
+    flex-direction: column;
+    color: white;
+    font-size: 18px;
+    border-left: 1px solid rgba(255,255,255,0.2);
+    border-right: 1px solid rgba(255,255,255,0.2);
+    padding-left: 8px;
+    padding-right: 8px;
+
+    button {
+        background-color: #292929;
+        padding: 2px;
+        margin-top: 5px;
+        font-size: 16px;
+        color: white;
+        transition: all .3s ease-in-out;
+        border-radius: 50%;
+        justify-content: center;
+        margin-left: 10px;
+        margin-right: 10px;
+        z-index: 100;
+
+        &:hover {
+            color: black;
+            background-color: #ffffffE6;
+        }
+    }
+}
+
+hud {
+    width: 100%;
+    position: absolute;
+    left: 50%;
+    top: -100%;
+    width: 260px;
+    transform: translateX(-50%);
+    height: auto;
+    background-color: #151515E6;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    text-align: center;
+    justify-content: center;
+    padding: 4px;
+    transition: all 1s ease-in-out;
+    opacity: 0;
+}
+
+.score {
+    color: white;
+    font-size: 18px;
+}
+
+.hud-visible {
+    top: 10px;
+    pointer-events: visible;
+    opacity: 1;
+}
+
+.scores {
+    width: 27%;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+}

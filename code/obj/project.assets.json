@@ -1,0 +1,94 @@
+{
+  "version": 3,
+  "targets": {
+    "net5.0": {
+      "base/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v5.0",
+        "compile": {
+          "bin/placeholder/base.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/base.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "base/1.0.0": {
+      "type": "project",
+      "path": "../../base/code/base.csproj",
+      "msbuildProject": "../../base/code/base.csproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net5.0": [
+      "base >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\Stromic\\.nuget\\packages\\": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\chess.csproj",
+      "projectName": "chess",
+      "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\chess.csproj",
+      "packagesPath": "C:\\Users\\Stromic\\.nuget\\packages\\",
+      "outputPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\Stromic\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net5.0"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net5.0": {
+          "targetAlias": "net5.0",
+          "projectReferences": {
+            "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\base\\code\\base.csproj": {
+              "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\base\\code\\base.csproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      }
+    },
+    "frameworks": {
+      "net5.0": {
+        "targetAlias": "net5.0",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\5.0.301\\RuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}

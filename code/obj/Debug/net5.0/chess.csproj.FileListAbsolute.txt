@@ -1,0 +1,5 @@
+D:\Steam Games\steamapps\common\sbox\Addons\chess\code\obj\Debug\net5.0\chess.csproj.AssemblyReference.cache
+D:\Steam Games\steamapps\common\sbox\Addons\chess\code\obj\Debug\net5.0\chess.GeneratedMSBuildEditorConfig.editorconfig
+D:\Steam Games\steamapps\common\sbox\Addons\chess\code\obj\Debug\net5.0\chess.AssemblyInfoInputs.cache
+D:\Steam Games\steamapps\common\sbox\Addons\chess\code\obj\Debug\net5.0\chess.AssemblyInfo.cs
+D:\Steam Games\steamapps\common\sbox\Addons\chess\code\obj\Debug\net5.0\chess.csproj.CoreCompileInputs.cache

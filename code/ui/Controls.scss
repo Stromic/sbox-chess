@@ -1,0 +1,73 @@
+﻿controls {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(50,50,50,0.3);
+    backdrop-filter: blur(15px) saturate(80%);
+    transition: all 1s ease-in-out;
+}
+
+.controls-container {
+    position: absolute;
+    left: -160px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 130px;
+    height: auto;
+    background-color: #151515E6;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    transition: all 1s ease-in-out;
+    padding-bottom: 8px;
+    z-index: 100;
+
+    .overhead {
+        color: white;
+        font-size: 20px;
+        margin-bottom: 2px;
+        padding-bottom: 1px;
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+
+    button {
+        background-color: #292929;
+        padding: 2px;
+        margin-top: 6px;
+        font-size: 16px;
+        color: white;
+        transition: all .3s ease-in-out;
+        border-radius: 50%;
+        justify-content: center;
+        margin-left: 15px;
+        margin-right: 15px;
+
+        &:hover {
+            color: black;
+            background-color: #ffffffE6;
+        }
+    }
+}
+
+.selected {
+    opacity: .3;
+}
+
+.select-team {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    color: white;
+    font-size: 32px;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    text-shadow: 2px 2px #202020;
+}
+
+.hide{
+    opacity: 0;
+}
+
+.controls-visible {
+    left: 10px;
+    pointer-events: all;
+}
