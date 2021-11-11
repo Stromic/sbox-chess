@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "WNu5oKYyikADbYa+R8doAgjkDDmFqvO0XzXP0IAsVxSupw0Ste2ZBk6iyCGT4eSvmkf/UjLRU7FiKissnYiC9g==",
+  "dgSpecHash": "aSLV3YdrLYEPLeldQvzn3LC7Tbqy6stZIC9KNsZjxou25z25S/iA0eMOaWivH7kv6wzu7/MyGFJMPtVFK1b7Aw==",
   "success": true,
-  "projectFilePath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\chess.csproj",
+  "projectFilePath": "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\sbox-chess\\code\\sbox-chess.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

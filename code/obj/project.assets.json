@@ -33,11 +33,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\chess.csproj",
-      "projectName": "chess",
-      "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\chess.csproj",
+      "projectUniqueName": "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\sbox-chess\\code\\sbox-chess.csproj",
+      "projectName": "sbox-chess",
+      "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\sbox-chess\\code\\sbox-chess.csproj",
       "packagesPath": "C:\\Users\\Stromic\\.nuget\\packages\\",
-      "outputPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\chess\\code\\obj\\",
+      "outputPath": "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\sbox-chess\\code\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
@@ -57,8 +57,8 @@
         "net5.0": {
           "targetAlias": "net5.0",
           "projectReferences": {
-            "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\base\\code\\base.csproj": {
-              "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\Addons\\base\\code\\base.csproj"
+            "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\base\\code\\base.csproj": {
+              "projectPath": "D:\\Steam Games\\steamapps\\common\\sbox\\addons\\base\\code\\base.csproj"
             }
           }
         }

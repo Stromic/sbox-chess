@@ -202,7 +202,7 @@ namespace Chess
 				if ( ent.Team == Team )
 					continue;
 
-				var ent_moves = ent.GetMoves();
+				var ent_moves = ent.GetMoves(false, true);
 
 				foreach (var move in ent_moves )
 				{
@@ -229,7 +229,61 @@ namespace Chess
 			return goodMoves;
 		}
 
-		public List<int> GetMoves( bool mark = false, List<int> blockers = null ) // TODO: Clean this up
+		private void GetGridsInDir( List<int> grids, int type, int iterations = 8, bool ignore_occupied = false)
+		{
+			bool IsBlack = Team == 2;
+
+			for ( int i = 1; i < iterations; i++ )
+			{
+				int up = UpInt;
+				int side = SideInt;
+
+				if (type == 1 ) // Rook Logics
+				{
+					up = UpInt + (IsBlack ? -i : i); // Forward
+				} else if (type == 2 )
+				{
+					up = UpInt + (IsBlack ? i : -i); // Backward
+				} else if (type == 3 )
+				{
+					side = SideInt + (IsBlack ? i : -i); // Left
+				} else if (type == 4)
+				{
+					side = SideInt + (IsBlack ? -i : i); // Right
+				}
+				else if ( type == 5 ) // Bishop Logics
+				{
+					up = UpInt + (IsBlack ? -i : i);  // Left Top
+					side = SideInt + (IsBlack ? i : -i);
+				}
+				else if ( type == 6 )
+				{
+					up = UpInt + (IsBlack ? -i : i);  // Right Top
+					side = SideInt + (IsBlack ? -i : i);
+				}
+				else if ( type == 7 )
+				{
+					up = UpInt + (IsBlack ? i : -i);  // Left Bottom
+					side = SideInt + (IsBlack ? i : -i);
+				}
+				else if ( type == 8 )
+				{
+					up = UpInt + (IsBlack ? i : -i);  // Right Bottom
+					side = SideInt + (IsBlack ? -i : i);
+				}
+
+				if (!InBounds( up, side ) || IsFriendlyBlocked( up, side ) )
+					break;
+
+				grids.Add( ConcatInt( up, side ) );
+
+				if ( ChessGame.Current.IsCellOccupied( up, side ) && !ignore_occupied )
+					break;
+			}
+
+		}
+		
+		public List<int> GetMoves( bool mark = false, bool ignore_blocks = false )
 		{
 			List<int> moves = new List<int>();
 
@@ -254,284 +308,53 @@ namespace Chess
 			}
 			else if ( PieceType == 2 ) // Rook
 			{
-				bool upblocked = false;
-				bool downblocked = false;
-				bool leftblocked = false;
-				bool rightblocked = false;
-
-				bool addedTargetup = false;
-				bool addedTargetdown = false;
-				bool addedTargetleft = false;
-				bool addedTargetright = false;
-
-				for ( int i = 1; i < 8; i++ )
-				{
-					var nextUp = UpInt + i;
-					var nextDown = UpInt - i;
-					var nextRight = SideInt + i;
-					var nextLeft = SideInt - i;
-
-					if ( InBounds( nextUp, SideInt ) && !upblocked )
-						if ( IsFriendlyBlocked( nextUp, SideInt ) )
-							upblocked = true;
-						else if ( !addedTargetup )
-						{
-							if ( !IsFriendlyBlocked( nextUp, SideInt, true ) )
-								addedTargetup = true;
-
-							moves.Add( ConcatInt( nextUp, SideInt ) );
-						}
-
-					if ( InBounds( nextDown, SideInt ) && !downblocked )
-						if ( IsFriendlyBlocked( nextDown, SideInt ) )
-							downblocked = true;
-						else if ( !addedTargetdown )
-						{
-							if ( !IsFriendlyBlocked( nextDown, SideInt, true ) )
-								addedTargetdown = true;
-
-							moves.Add( ConcatInt( nextDown, SideInt ) );
-						}
-
-					if ( InBounds( UpInt, nextLeft ) && !leftblocked )
-						if ( IsFriendlyBlocked( UpInt, nextLeft ) )
-							leftblocked = true;
-						else if ( !addedTargetleft )
-						{
-							if ( !IsFriendlyBlocked( UpInt, nextLeft, true ) )
-								addedTargetleft = true;
-
-							moves.Add( ConcatInt( UpInt, nextLeft ) );
-						}
-
-
-
-					if ( InBounds( UpInt, nextRight ) && !rightblocked )
-						if ( IsFriendlyBlocked( UpInt, nextRight ) )
-							rightblocked = true;
-						else if ( !addedTargetright )
-						{
-							if ( !IsFriendlyBlocked( UpInt, nextRight, true ) )
-								addedTargetright = true;
-
-							moves.Add( ConcatInt( UpInt, nextRight ) );
-						}
-				}
+				GetGridsInDir( moves, 1, 8, ignore_blocks );
+				GetGridsInDir( moves, 2, 8, ignore_blocks );
+				GetGridsInDir( moves, 3, 8, ignore_blocks );
+				GetGridsInDir( moves, 4, 8, ignore_blocks );
 			}
 			else if ( PieceType == 3 ) // Horse
 			{
+				int[] horse_moves = { ConcatInt( UpInt + 2, SideInt - 1 ), ConcatInt( UpInt + 2, SideInt + 1 ), ConcatInt( UpInt - 2, SideInt - 1 ), ConcatInt( UpInt - 2, SideInt + 1 ), ConcatInt( UpInt + 1, SideInt - 2 ), ConcatInt( UpInt - 1, SideInt - 2 ), ConcatInt( UpInt + 1, SideInt + 2 ), ConcatInt( UpInt - 1, SideInt + 2 ) };
 
-				if ( InBounds( UpInt + 2, SideInt - 1 ) && !IsFriendlyBlocked( UpInt + 2, SideInt - 1 ) )
-					moves.Add( ConcatInt( UpInt + 2, SideInt - 1 ) );
+				foreach(var move in horse_moves )
+				{
+					string num_str = move.ToString();
+		
+					if ( num_str.Length < 2 )
+						continue;
 
-				if ( InBounds( UpInt + 2, SideInt + 1 ) && !IsFriendlyBlocked( UpInt + 2, SideInt + 1 ) )
-					moves.Add( ConcatInt( UpInt + 2, SideInt + 1 ) );
+					int up = (int)(num_str[0]) - 48;
+					int side = (int)(num_str[1]) - 48;
 
-				if ( InBounds( UpInt - 2, SideInt - 1 ) && !IsFriendlyBlocked( UpInt - 2, SideInt - 1 ) )
-					moves.Add( ConcatInt( UpInt - 2, SideInt - 1 ) );
 
-				if ( InBounds( UpInt - 2, SideInt + 1 ) && !IsFriendlyBlocked( UpInt - 2, SideInt + 1 ) )
-					moves.Add( ConcatInt( UpInt - 2, SideInt + 1 ) );
-
-				if ( InBounds( UpInt + 1, SideInt - 2 ) && !IsFriendlyBlocked( UpInt + 1, SideInt - 2 ) )
-					moves.Add( ConcatInt( UpInt + 1, SideInt - 2 ) );
-
-				if ( InBounds( UpInt - 1, SideInt - 2 ) && !IsFriendlyBlocked( UpInt - 1, SideInt - 2 ) )
-					moves.Add( ConcatInt( UpInt - 1, SideInt - 2 ) );
-
-				if ( InBounds( UpInt + 1, SideInt + 2 ) && !IsFriendlyBlocked( UpInt + 1, SideInt + 2 ) )
-					moves.Add( ConcatInt( UpInt + 1, SideInt + 2 ) );
-
-				if ( InBounds( UpInt - 1, SideInt + 2 ) && !IsFriendlyBlocked( UpInt - 1, SideInt + 2 ) )
-					moves.Add( ConcatInt( UpInt - 1, SideInt + 2 ) );
+					if ( InBounds( up, side ) && !IsFriendlyBlocked( up, side ) )
+						moves.Add( ConcatInt( up, side ) );
+				}
 			}
 			else if ( PieceType == 4 ) // Bishop
 			{
-				bool leftup_blocked = false;
-				bool righttup_blocked = false;
-				bool leftdown_blocked = false;
-				bool rightdown_blocked = false;
-
-				bool addedtarget_leftup = false;
-				bool addedtarget_rightup = false;
-				bool addedtarget_leftdown = false;
-				bool addedtarget_rightdown = false;
-
-				for ( int i = 1; i < 8; i++ )
-				{
-					if ( InBounds( UpInt + i, SideInt - i ) && !leftup_blocked )
-						if ( IsFriendlyBlocked( UpInt + i, SideInt - i ) )
-							leftup_blocked = true;
-						else if ( !addedtarget_leftup )
-						{
-							if ( !IsFriendlyBlocked( UpInt + i, SideInt - i, true ) )
-								addedtarget_leftup = true;
-
-							moves.Add( ConcatInt( UpInt + i, SideInt - i ) );
-						}
-
-					if ( InBounds( UpInt + i, SideInt + i ) && !righttup_blocked )
-						if ( IsFriendlyBlocked( UpInt + i, SideInt + i ) )
-							righttup_blocked = true;
-						else if ( !addedtarget_rightup )
-						{
-							if ( !IsFriendlyBlocked( UpInt + i, SideInt + i, true ) )
-								addedtarget_rightup = true;
-
-							moves.Add( ConcatInt( UpInt + i, SideInt + i ) );
-						}
-
-					if ( InBounds( UpInt - i, SideInt - i ) && !leftdown_blocked )
-						if ( IsFriendlyBlocked( UpInt - i, SideInt - i ) )
-							leftdown_blocked = true;
-						else if ( !addedtarget_leftdown )
-						{
-							if ( !IsFriendlyBlocked( UpInt - i, SideInt - i, true ) )
-								addedtarget_leftdown = true;
-
-							moves.Add( ConcatInt( UpInt - i, SideInt - i ) );
-						}
-
-					if ( InBounds( UpInt - i, SideInt + i ) && !rightdown_blocked )
-						if ( IsFriendlyBlocked( UpInt - i, SideInt + i ) )
-							rightdown_blocked = true;
-						else if ( !addedtarget_rightdown )
-						{
-							if ( !IsFriendlyBlocked( UpInt - i, SideInt + i, true ) )
-								addedtarget_rightdown = true;
-
-							moves.Add( ConcatInt( UpInt - i, SideInt + i ) );
-						}
-				}
+				GetGridsInDir( moves, 5, 8, ignore_blocks );
+				GetGridsInDir( moves, 6, 8, ignore_blocks );
+				GetGridsInDir( moves, 7, 8, ignore_blocks );
+				GetGridsInDir( moves, 8, 8, ignore_blocks );
 			}
 			else if ( PieceType == 5 ) // Queen
 			{
-				bool leftup_blocked = false;
-				bool righttup_blocked = false;
-				bool leftdown_blocked = false;
-				bool rightdown_blocked = false;
-
-				bool addedtarget_leftup = false;
-				bool addedtarget_rightup = false;
-				bool addedtarget_leftdown = false;
-				bool addedtarget_rightdown = false;
-
-				for ( int i = 1; i < 8; i++ )
-				{
-					if ( InBounds( UpInt + i, SideInt - i ) && !leftup_blocked )
-						if ( IsFriendlyBlocked( UpInt + i, SideInt - i ) )
-							leftup_blocked = true;
-						else if ( !addedtarget_leftup )
-						{
-							if ( !IsFriendlyBlocked( UpInt + i, SideInt - i, true ) )
-								addedtarget_leftup = true;
-
-							moves.Add( ConcatInt( UpInt + i, SideInt - i ) );
-						}
-
-
-					if ( InBounds( UpInt + i, SideInt + i ) && !righttup_blocked )
-						if ( IsFriendlyBlocked( UpInt + i, SideInt + i ) )
-							righttup_blocked = true;
-						else if ( !addedtarget_rightup )
-						{
-							if ( !IsFriendlyBlocked( UpInt + i, SideInt + i, true ) )
-								addedtarget_rightup = true;
-
-							moves.Add( ConcatInt( UpInt + i, SideInt + i ) );
-						}
-
-					if ( InBounds( UpInt - i, SideInt - i ) && !leftdown_blocked )
-						if ( IsFriendlyBlocked( UpInt - i, SideInt - i ) )
-							leftdown_blocked = true;
-						else if ( !addedtarget_leftdown )
-						{
-							if ( !IsFriendlyBlocked( UpInt - i, SideInt - i, true ) )
-								addedtarget_leftdown = true;
-
-							moves.Add( ConcatInt( UpInt - i, SideInt - i ) );
-						}
-
-					if ( InBounds( UpInt - i, SideInt + i ) && !rightdown_blocked )
-						if ( IsFriendlyBlocked( UpInt - i, SideInt + i ) )
-							rightdown_blocked = true;
-						else if ( !addedtarget_rightdown )
-						{
-							if ( !IsFriendlyBlocked( UpInt - i, SideInt + i, true ) )
-								addedtarget_rightdown = true;
-
-							moves.Add( ConcatInt( UpInt - i, SideInt + i ) );
-						}
-				}
-
-
-				bool upblocked = false;
-				bool downblocked = false;
-				bool leftblocked = false;
-				bool rightblocked = false;
-
-				bool addedTargetup = false;
-				bool addedTargetdown = false;
-				bool addedTargetleft = false;
-				bool addedTargetright = false;
-
-				for ( int i = 1; i < 8; i++ )
-				{
-					var nextUp = UpInt + i;
-					var nextDown = UpInt - i;
-					var nextRight = SideInt + i;
-					var nextLeft = SideInt - i;
-
-					if ( InBounds( nextUp, SideInt ) && !upblocked )
-						if ( IsFriendlyBlocked( nextUp, SideInt ) )
-							upblocked = true;
-						else if ( !addedTargetup )
-						{
-							if ( !IsFriendlyBlocked( nextUp, SideInt, true ) )
-								addedTargetup = true;
-
-							moves.Add( ConcatInt( nextUp, SideInt ) );
-						}
-
-					if ( InBounds( nextDown, SideInt ) && !downblocked )
-						if ( IsFriendlyBlocked( nextDown, SideInt ) )
-							downblocked = true;
-						else if ( !addedTargetdown )
-						{
-							if ( !IsFriendlyBlocked( nextDown, SideInt, true ) )
-								addedTargetdown = true;
-
-							moves.Add( ConcatInt( nextDown, SideInt ) );
-						}
-
-					if ( InBounds( UpInt, nextLeft ) && !leftblocked )
-						if ( IsFriendlyBlocked( UpInt, nextLeft ) )
-							leftblocked = true;
-						else if ( !addedTargetleft )
-						{
-							if ( !IsFriendlyBlocked( UpInt, nextLeft, true ) )
-								addedTargetleft = true;
-
-							moves.Add( ConcatInt( UpInt, nextLeft ) );
-						}
-
-					if ( InBounds( UpInt, nextRight ) && !rightblocked )
-						if ( IsFriendlyBlocked( UpInt, nextRight ) )
-							rightblocked = true;
-						else if ( !addedTargetright )
-						{
-							if ( !IsFriendlyBlocked( UpInt, nextRight, true ) )
-								addedTargetright = true;
-
-							moves.Add( ConcatInt( UpInt, nextRight ) );
-						}
-				}
+				GetGridsInDir( moves, 1, 8, ignore_blocks );
+				GetGridsInDir( moves, 2, 8, ignore_blocks );
+				GetGridsInDir( moves, 3, 8, ignore_blocks );
+				GetGridsInDir( moves, 4, 8, ignore_blocks );
+				GetGridsInDir( moves, 5, 8, ignore_blocks );
+				GetGridsInDir( moves, 6, 8, ignore_blocks );
+				GetGridsInDir( moves, 7, 8, ignore_blocks );
+				GetGridsInDir( moves, 8, 8, ignore_blocks );
 			}
-			else if ( PieceType == 6 )
+			else if ( PieceType == 6 ) // King
 			{
-				int[] wanted_moves = { ConcatInt( UpInt + 1, SideInt ), ConcatInt( UpInt + 1, SideInt + 1 ), ConcatInt( UpInt, SideInt + 1 ), ConcatInt( UpInt - 1, SideInt + 1 ), ConcatInt( UpInt - 1, SideInt ), ConcatInt( UpInt - 1, SideInt - 1 ), ConcatInt( UpInt, SideInt - 1 ), ConcatInt( UpInt + 1, SideInt - 1 ) };
+				int[] king_moves = { ConcatInt( UpInt + 1, SideInt ), ConcatInt( UpInt + 1, SideInt + 1 ), ConcatInt( UpInt, SideInt + 1 ), ConcatInt( UpInt - 1, SideInt + 1 ), ConcatInt( UpInt - 1, SideInt ), ConcatInt( UpInt - 1, SideInt - 1 ), ConcatInt( UpInt, SideInt - 1 ), ConcatInt( UpInt + 1, SideInt - 1 ) };
 
-				foreach ( var wanted in wanted_moves )
+				foreach ( var wanted in king_moves )
 				{
 					string num_str = wanted.ToString();
 
