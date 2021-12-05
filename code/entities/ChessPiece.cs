@@ -358,7 +358,7 @@ namespace Chess
 
 			Vector3 pos = ChessGame.Current.GetPiecePosition( CurPos, Team == 2 ? 1 : 8 );
 			pos.y += (Team == 2 ? 150f : -150f) * (Doubled ? 1.6f : 1);
-			pos.z = 1587f;
+			pos.z = 1267f;
 
 			Position = pos;
 		}
@@ -373,7 +373,9 @@ namespace Chess
 			virtualized_up = up;
 			virtualized_side = side;
 
-			if ( king.InDanger().IsValid() ) 
+			var danger = king.InDanger();
+
+			if ( danger.IsValid() && danger.UpInt != up && danger.SideInt != side ) 
 				result = true;
 
 			virtualized_up = 0;

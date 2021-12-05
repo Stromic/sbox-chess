@@ -56,7 +56,7 @@ namespace Chess
 
 				for ( int iside = 0; iside < 8; iside++ )
 				{
-					var pos = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1613f );
+					var pos = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1293f );
 
 					dict[iside + 1] = pos;
 				}
@@ -72,7 +72,7 @@ namespace Chess
 
 					for ( int iside = 0; iside < 8; iside++ )
 					{
-						var cell = new GridBox() { Position = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1613f ), upint = iup + 1, sideint = iside + 1 };
+						var cell = new GridBox() { Position = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1293f ), upint = iup + 1, sideint = iside + 1 };
 
 						dict[iside + 1] = cell;
 					}
@@ -509,6 +509,17 @@ namespace Chess
 			var pawn = client?.Pawn as ChessPlayer;
 
 			pawn.SetPromotionScreen( Convert.ToBoolean(todo) );
+		}
+
+		[Event.Hotload]
+		public void TestShit()
+		{
+			var startPos = new Vector3(0f,0f,2000f);
+			var endPos = new Vector3( 0f, 0f, 0f );
+
+			var tr = Trace.Ray( startPos, endPos ).Run();
+
+			Log.Info(tr.EndPos);
 		}
 	}
 }

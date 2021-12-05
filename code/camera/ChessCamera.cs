@@ -11,7 +11,7 @@
 
 		}
 
-		Vector3[] positions = new Vector3[3] { new Vector3( -800f, 0f, 2300f ) , new Vector3( -1000f, 0f, 2400f ), new Vector3( -10f, 0f, 2700f ) };
+		Vector3[] positions = new Vector3[3] { new Vector3( -800f, 0f, 1900f ) , new Vector3( -1000f, 0f, 2000f ), new Vector3( -10f, 0f, 2300f ) };
 
 		public override void Update()
 		{
@@ -30,7 +30,7 @@
 
 			Position = pos;
 
-			var targetDelta = (new Vector3( 0f, 0f, 1500f ) - Position);
+			var targetDelta = (new Vector3( 0f, 0f, 1100f ) - Position);
 			var targetDirection = targetDelta.Normal;
 
 			Rotation = Rotation.From( new Angles(
