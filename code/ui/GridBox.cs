@@ -11,13 +11,13 @@
 		
 		[Sandbox.Net]
 		public bool Marked { get; set; }
+		public int size = 2000;
 
 		public GridBox()
 		{
 			StyleSheet.Load( "/ui/GridBox.scss" );
 
-			var size = 2420;
-			PanelBounds = new Rect( -size, -size, size, size );
+			PanelBounds = new Rect( (float)(-size * .5), (float)(-size * .5), size, size );
 
 			Rotation = Rotation.From( 90f, 0f, 0f );
 
@@ -38,10 +38,11 @@
 				game.HoveredCell = this;
 			}
 
+			SetClass( "hovered", game.SelectedCell == this || IsHovered );
+
 			if ( !Marked )
 			{
 				SetClass( "marked", IsHovered );
-				SetClass( "hovered", IsHovered );
 				SetClass( "kill", false );
 			}
 
@@ -50,7 +51,7 @@
 			{
 				bool isKingGrid = (upint == king.UpInt && sideint == king.SideInt);
 
-				if ( isKingGrid && king.InDanger().IsValid() )
+				if ( isKingGrid && king.IsDangered )
 				{
 					SetClass( "kill", true );
 				}

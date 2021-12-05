@@ -2,54 +2,56 @@
     width: 100%;
     height: 100%;
     background-color: rgba(50,50,50,0.3);
-    backdrop-filter: blur(15px) saturate(80%);
+    backdrop-filter: blur(3px) saturate(80%);
     transition: all 1s ease-in-out;
 }
 
 .controls-container {
     position: absolute;
-    left: -160px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 130px;
+    width: 320px;
     height: auto;
-    background-color: #151515E6;
+    background-color: #232323E6;
     text-align: center;
     justify-content: center;
     flex-direction: column;
-    transition: all 1s ease-in-out;
     padding-bottom: 8px;
     z-index: 100;
 
     .overhead {
         color: white;
-        font-size: 20px;
+        font-size: 26px;
         margin-bottom: 2px;
         padding-bottom: 1px;
         border-bottom: 1px solid rgba(255,255,255,0.2);
+        margin-bottom: 6px;
     }
 
     button {
-        background-color: #292929;
+        background-color: #343434;
+        border: 1px solid rgba(0,0,0,0.4);
         padding: 2px;
         margin-top: 6px;
-        font-size: 16px;
+        font-size: 20px;
         color: white;
         transition: all .3s ease-in-out;
         border-radius: 50%;
         justify-content: center;
         margin-left: 15px;
         margin-right: 15px;
+        margin-top: 6px;
+        margin-bottom: 6px;
 
         &:hover {
             color: black;
             background-color: #ffffffE6;
         }
-    }
-}
 
-.selected {
-    opacity: .3;
+        &.selected {
+            color: white;
+            opacity: .3;
+            background-color: black;
+        }
+    }
 }
 
 .select-team {
@@ -68,6 +70,5 @@
 }
 
 .controls-visible {
-    left: 10px;
     pointer-events: all;
 }

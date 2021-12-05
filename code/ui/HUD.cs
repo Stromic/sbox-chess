@@ -9,7 +9,6 @@
 	{
 		private Label black_score { get; set; }
 		private Label white_score { get; set; }
-		private Panel hud { get; set; }
 		private Button forfeit { get; set; }
 		private bool forfeitPressed = false;
 		private Label whos_turn { get; set; }
@@ -40,11 +39,13 @@
 
 			foreach ( ChessPiece ent in Entity.All.OfType<ChessPiece>() ) // Maybe optimize?
 			{
+				if ( ent.Killed )
+					continue;
+
 				if ( ent.Team == 2 )
 				{ amountBlack = amountBlack + 1; }
 				else
 				{ amountWhite = amountWhite + 1; }
-
 			}
 
 			if ( Input.Down( InputButton.Attack1 ) ) // pointer-events didnt seem to work as intented?

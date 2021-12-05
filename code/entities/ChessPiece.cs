@@ -13,16 +13,34 @@ namespace Chess
 		[Net]
 		public bool FirstMove { get; set; } = true;
 		string[] pieceTypes = { "models/chess_pieces/pawn.vmdl", "models/chess_pieces/rook.vmdl", "models/chess_pieces/horse.vmdl", "models/chess_pieces/bishop.vmdl", "models/chess_pieces/queen.vmdl", "models/chess_pieces/king.vmdl" };
+
 		[Net]
 		public int UpInt { get; set; }
+
 		[Net]
 		public int SideInt { get; set; }
+
 		[Net]
 		public int Team { get; set; } = 1;
 
+		[Net]
+		public int KingChecked { get; set; } = 0;
+
+		[Net]
+		public bool IsDangered { get; set; }
+		[Net]
+		public bool Killed { get; set; }
+
+		public int virtualized_up { get; set; }
+		public int virtualized_side { get; set; }
 
 		private int ConcatInt(int a, int b ) // Yeah very nice
 		{
+			if (a < 0 || b < 0 )
+			{
+				return 0;
+			}
+
 			return int.Parse( a.ToString() + b.ToString() );
 		}
 
@@ -44,13 +62,14 @@ namespace Chess
 
 			foreach (var piece in Entity.All.OfType<ChessPiece>() )
 			{
-				if ( piece.Team == Team )
+				if ( piece.Team == Team || piece.Killed )
 					continue;
 
-				var moves = piece.GetMoves();
+				var moves = piece.GetMoves(false, false, null, null, true);
 
 				foreach (var move in moves )
 				{
+					
 					string num_str = move.ToString();
 					int up = (int)(num_str[0]) - 48;
 					int side = (int)(num_str[1]) - 48;
@@ -90,26 +109,24 @@ namespace Chess
 				}
 			} else { result = true;  }
 
-			return result;
+			return PieceType == 6 ? false : result;
 		}
 
-		//public List<int> CanShieldKingMoves() // TODO: Make helper functions to make this a clean solution...
-		//{
-		//	var game = ChessGame.Current;
-		//	var king = (Team == 1 ? game.white_player : game.black_player)?.King;
-		//	var danger = king?.InDanger();
+		public Dictionary<int, bool> CanShieldKingMoves()
+		{
+			var game = ChessGame.Current;
+			var king = (Team == 1 ? game.white_player : game.black_player)?.King;
+			var danger = king?.InDanger();
 
-		//	var blockers = new Dictionary<int, bool>(); ;
+			var blockers = new Dictionary<int, bool>(); ;
 
-		//	if ( danger.IsValid() )
-		//	{
-		//		var 
-		//		var moves = danger.GetMoves(false, moves );
+			if ( danger.IsValid() && PieceType != 6 )
+			{
+				danger.GetMoves( false, false, GetMoves(), blockers );
+			}
 
-		//	}
-
-		//	return blockers;
-		//}
+			return blockers;
+		}
 
 		public void SetBlack()
 		{
@@ -126,6 +143,10 @@ namespace Chess
 			Position = ChessGame.Current.GetPiecePosition( up, side );
 
 			await Task.Delay(30);
+
+			if ( !this.IsValid() )
+				return;
+
 			Sound.FromEntity( "chess_move", this );
 		}
 
@@ -173,65 +194,25 @@ namespace Chess
 				bool IsBlack = Team == 2;
 				if (UpInt == (IsBlack ? 8 : 1) )
 				{
-					Log.Info(UpInt);
 					var game = ChessGame.Current;
 					var ply = IsBlack ? game.black_player : game.white_player;
 					ply.PromotingPiece = this;
 
-					ply.SetPromotionScreen( true );
+					ply.SetPromotionScreen( To.Single( ply ), true );
 
 					return false;
-				} else
-				{
-					return true;
 				}
+
+				return true;
 			}
 
 			return true;
 		}
-		
-		public List<int> GetSafeMoves( bool mark = false)
-		{
-			var moves = GetMoves();
 
-			var badMoves = new Dictionary<int, bool>(); ;
-			List<int> goodMoves = new List<int>();
-
-			foreach ( var ent in Entity.All.OfType<ChessPiece>())
-			{
-				if ( ent.Team == Team )
-					continue;
-
-				var ent_moves = ent.GetMoves(false, true);
-
-				foreach (var move in ent_moves )
-				{
-					badMoves[move] = true;
-				}
-			}
-
-			foreach ( var move in moves )
-			{
-				if ( !badMoves.ContainsKey(move) )
-				{
-					goodMoves.Add( move );
-
-					if ( IsClient && mark )
-					{
-						string num_str = move.ToString();
-						int up = (int)(num_str[0]) - 48;
-						int side = (int)(num_str[1]) - 48;
-						ChessGame.Current.SetMarkedCell( up, side, true, ChessGame.Current.GetOccupant( up, side ).IsValid() );
-					}
-				}
-			}
-
-			return goodMoves;
-		}
-
-		private void GetGridsInDir( List<int> grids, int type, int iterations = 8, bool ignore_occupied = false)
+		private void GetGridsInDir( List<int> grids, int type, int iterations = 8, bool ignore_occupied = false, List<int> blockers = null, Dictionary<int, bool> blockers_fill = null, bool ignore_putdanger = false )
 		{
 			bool IsBlack = Team == 2;
+			bool KingOccupied = false;
 
 			for ( int i = 1; i < iterations; i++ )
 			{
@@ -272,25 +253,143 @@ namespace Chess
 					side = SideInt + (IsBlack ? -i : i);
 				}
 
-				if (!InBounds( up, side ) || IsFriendlyBlocked( up, side ) )
+				var checkBlockers = blockers != null && blockers_fill != null;
+
+				if ( checkBlockers && KingChecked == type )
+				{
+					bool blocked = false;
+
+					foreach ( var move in blockers )
+					{
+						string num_str = move.ToString();
+						int mv_up = (int)(num_str[0]) - 48;
+						int mv_side = (int)(num_str[1]) - 48;
+
+						if (mv_up == up && mv_side == side && !KingOccupied )
+						{
+							blockers_fill[move] = true;
+							blocked = true;
+							break;
+						}
+					}
+
+					if (blocked)
+						break;
+				}
+
+				if ( !ignore_putdanger && WillMovePutKingInDanger( up, side ) )
 					break;
+
+				if (!InBounds( up, side ) || IsFriendlyBlocked( up, side ) && !ignore_occupied)
+					break;
+
+				var occupy = ChessGame.Current.GetOccupant( up, side );
 
 				grids.Add( ConcatInt( up, side ) );
 
-				if ( ChessGame.Current.IsCellOccupied( up, side ) && !ignore_occupied )
+				var isKing = (occupy.IsValid() && occupy.PieceType == 6);
+				if ( isKing && occupy.PieceType == 6 )
+					KingChecked = type;
+
+				if ( isKing )
+					KingOccupied = true;
+
+				if ( ChessGame.Current.IsCellOccupied( up, side ) && !isKing )
 					break;
 			}
-
 		}
-		
-		public List<int> GetMoves( bool mark = false, bool ignore_blocks = false )
+
+		public List<int> GetSafeMoves( bool mark = false )
+		{
+			var moves = GetMoves();
+
+			var badMoves = new Dictionary<int, bool>(); ;
+			List<int> goodMoves = new List<int>();
+
+			foreach ( var ent in Entity.All.OfType<ChessPiece>() )
+			{
+				if ( ent.Team == Team || ent.Killed )
+					continue;
+
+				var ent_moves = ent.GetMoves( false, true );
+
+				foreach ( var move in ent_moves )
+				{
+					badMoves[move] = true;
+				}
+			}
+
+			foreach ( var move in moves )
+			{
+				if ( !badMoves.ContainsKey( move ) )
+				{
+					goodMoves.Add( move );
+
+					if ( IsClient && mark )
+					{
+						string num_str = move.ToString();
+						int up = (int)(num_str[0]) - 48;
+						int side = (int)(num_str[1]) - 48;
+						ChessGame.Current.SetMarkedCell( up, side, true, ChessGame.Current.GetOccupant( up, side ).IsValid() );
+					}
+				}
+			}
+
+			return goodMoves;
+		}
+
+		public void Kill()
+		{
+			Killed = true;
+
+			int AmountLeft = 0;
+
+			foreach ( ChessPiece ent in Entity.All.OfType<ChessPiece>() )
+			{
+				if ( ent.Team == Team && !ent.Killed)
+					AmountLeft = AmountLeft + 1;
+			}
+
+			var CurrentDeath = 16 - AmountLeft;
+			var Doubled = CurrentDeath > 8;
+			var CurPos = Doubled ? CurrentDeath - 8 : CurrentDeath;
+
+			CurPos = Team == 1 ? 8 - (CurPos - 1) : CurPos;
+
+			Vector3 pos = ChessGame.Current.GetPiecePosition( CurPos, Team == 2 ? 1 : 8 );
+			pos.y += (Team == 2 ? 150f : -150f) * (Doubled ? 1.6f : 1);
+			pos.z = 1587f;
+
+			Position = pos;
+		}
+
+		public bool WillMovePutKingInDanger(int up, int side) // NOTE: Maybe this can be optimized
+		{
+			bool result = false;
+			var game = ChessGame.Current;
+
+			var king = Team == 1 ? game.white_king : game.black_king;
+
+			virtualized_up = up;
+			virtualized_side = side;
+
+			if ( king.InDanger().IsValid() ) 
+				result = true;
+
+			virtualized_up = 0;
+			virtualized_side = 0;
+
+			return result;
+		}
+
+		public List<int> GetMoves( bool mark = false, bool ignore_blocks = false, List<int> blockers = null, Dictionary<int, bool> blockers_fill = null, bool ignore_putdanger = false )
 		{
 			List<int> moves = new List<int>();
 
 			bool IsBlack = Team == 2;
 			if ( PieceType == 1 ) // Pawn
 			{
-				if ( !ChessGame.Current.IsCellOccupied( UpInt + (IsBlack ? 1 : -1), SideInt ) )
+				if ( !ChessGame.Current.IsCellOccupied( UpInt + (IsBlack ? 1 : -1), SideInt ) && !ignore_blocks )
 				{
 					moves.Add( ConcatInt( UpInt + (IsBlack ? 1 : -1), SideInt ) );
 
@@ -300,18 +399,18 @@ namespace Chess
 					}
 				}
 
-				if ( !IsFriendlyBlocked( UpInt + (IsBlack ? 1 : -1), SideInt - 1, true ) )
+				if ( (!IsFriendlyBlocked( UpInt + (IsBlack ? 1 : -1), SideInt - 1, true ) || ignore_blocks) && (!ignore_putdanger && !WillMovePutKingInDanger( UpInt + (IsBlack ? 1 : -1), SideInt - 1 )) )
 					moves.Add( ConcatInt( UpInt + (IsBlack ? 1 : -1), SideInt - 1 ) );
 
-				if ( !IsFriendlyBlocked( UpInt + (IsBlack ? 1 : -1), SideInt + 1, true ) )
+				if ( (!IsFriendlyBlocked( UpInt + (IsBlack ? 1 : -1), SideInt + 1, true ) || ignore_blocks) && (!ignore_putdanger && !WillMovePutKingInDanger( UpInt + (IsBlack ? 1 : -1), SideInt + 1 )) )
 					moves.Add( ConcatInt( UpInt + (IsBlack ? 1 : -1), SideInt + 1 ) );
 			}
 			else if ( PieceType == 2 ) // Rook
 			{
-				GetGridsInDir( moves, 1, 8, ignore_blocks );
-				GetGridsInDir( moves, 2, 8, ignore_blocks );
-				GetGridsInDir( moves, 3, 8, ignore_blocks );
-				GetGridsInDir( moves, 4, 8, ignore_blocks );
+				GetGridsInDir( moves, 1, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 2, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 3, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 4, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
 			}
 			else if ( PieceType == 3 ) // Horse
 			{
@@ -319,6 +418,9 @@ namespace Chess
 
 				foreach(var move in horse_moves )
 				{
+					if ( move < 0 )
+						continue;
+
 					string num_str = move.ToString();
 		
 					if ( num_str.Length < 2 )
@@ -327,28 +429,27 @@ namespace Chess
 					int up = (int)(num_str[0]) - 48;
 					int side = (int)(num_str[1]) - 48;
 
-
 					if ( InBounds( up, side ) && !IsFriendlyBlocked( up, side ) )
 						moves.Add( ConcatInt( up, side ) );
 				}
 			}
 			else if ( PieceType == 4 ) // Bishop
 			{
-				GetGridsInDir( moves, 5, 8, ignore_blocks );
-				GetGridsInDir( moves, 6, 8, ignore_blocks );
-				GetGridsInDir( moves, 7, 8, ignore_blocks );
-				GetGridsInDir( moves, 8, 8, ignore_blocks );
+				GetGridsInDir( moves, 5, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 6, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 7, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 8, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
 			}
 			else if ( PieceType == 5 ) // Queen
 			{
-				GetGridsInDir( moves, 1, 8, ignore_blocks );
-				GetGridsInDir( moves, 2, 8, ignore_blocks );
-				GetGridsInDir( moves, 3, 8, ignore_blocks );
-				GetGridsInDir( moves, 4, 8, ignore_blocks );
-				GetGridsInDir( moves, 5, 8, ignore_blocks );
-				GetGridsInDir( moves, 6, 8, ignore_blocks );
-				GetGridsInDir( moves, 7, 8, ignore_blocks );
-				GetGridsInDir( moves, 8, 8, ignore_blocks );
+				GetGridsInDir( moves, 1, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 2, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 3, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 4, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 5, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 6, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 7, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
+				GetGridsInDir( moves, 8, 8, ignore_blocks, blockers, blockers_fill, ignore_putdanger );
 			}
 			else if ( PieceType == 6 ) // King
 			{
@@ -372,6 +473,10 @@ namespace Chess
 			foreach ( var result in moves )
 			{
 				string num_str = result.ToString();
+
+				if ( result < 0 || num_str.Length < 2 )
+					continue;
+
 				int up = (int)(num_str[0]) - 48;
 				int side = (int)(num_str[1]) - 48;
 
@@ -392,6 +497,17 @@ namespace Chess
 			SetModel( pieceTypes[type - 1] );
 
 			PieceType = type;
+
+			if ( type == 6 )
+			{
+				var game = ChessGame.Current;
+
+
+				if ( Team == 1  )
+					game.white_king = this;
+				else
+					game.black_king = this;
+			} 
 		}
 
 		protected override void OnDestroy()

@@ -20,12 +20,29 @@ namespace Chess
 		[Net]
 		public ChessPlayer black_player { get; set; }
 
-		[Net]
+		[Net, Change]
 		public int TeamTurn { get; set; } = 1;
 		
 		[Net]
 		public bool Playing { get; set; }
 
+		[Net]
+		public ChessPiece white_king { get; set; }
+
+		[Net]
+		public ChessPiece black_king { get; set; }
+
+		private ChessPiece LastMoved { get; set; }
+
+		private bool debugging = false;
+
+		public void OnTeamTurnChanged( int oldval, int newval )
+		{
+			if ( IsClient )
+				return;
+
+			WinnerCheck();
+		}
 
 		public ChessGame()
 		{
@@ -39,7 +56,7 @@ namespace Chess
 
 				for ( int iside = 0; iside < 8; iside++ )
 				{
-					var pos = new Vector3( -420f + (120f * iside), 420f - (120f * iup), 34f );
+					var pos = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1613f );
 
 					dict[iside + 1] = pos;
 				}
@@ -55,7 +72,7 @@ namespace Chess
 
 					for ( int iside = 0; iside < 8; iside++ )
 					{
-						var cell = new GridBox() { Position = new Vector3( -480f + (119.8f * iup), 479.9f - (119.8f * iside), 34f ), upint = iup + 1, sideint = iside + 1 };
+						var cell = new GridBox() { Position = new Vector3( -420f + (120f * iup), 420f - (120f * iside), 1613f ), upint = iup + 1, sideint = iside + 1 };
 
 						dict[iside + 1] = cell;
 					}
@@ -72,7 +89,7 @@ namespace Chess
 
 		public Vector3 GetPiecePosition( int up, int side )
 		{
-			return (PiecePositions[side][up]);
+			return (PiecePositions[up][side]);
 		}
 
 		public void SetMarkedCell( int up, int side, bool enabled = false, bool kill = false )
@@ -86,6 +103,16 @@ namespace Chess
 			cell.SetClass( "kill", kill );
 		}
 
+		public bool IsCellMarked( int up, int side )
+		{
+			if ( up <= 0 && side <= 0 )
+				return false;
+
+			var cell = ChessGame.Current.Cells[up][side];
+
+			return cell.Marked;
+		}
+
 		public GridBox GetCell( int up, int side )
 		{
 			return Cells[up][side];
@@ -96,7 +123,10 @@ namespace Chess
 			ChessPiece occupant = null;
 			foreach ( ChessPiece ent in Entity.All.OfType<ChessPiece>())
 			{
-				if ( ent.UpInt == up && ent.SideInt == side )
+				var cur_up = ent.virtualized_up > 0 ? ent.virtualized_up : ent.UpInt;
+				var cur_side = ent.virtualized_side > 0 ? ent.virtualized_side : ent.SideInt ;
+
+				if ( cur_up == up && cur_side == side && !ent.Killed )
 				{
 					occupant = ent;
 					break;
@@ -131,16 +161,12 @@ namespace Chess
 		private void SpawnPiece(int type, bool black, int cell_up, int cell_side)
 		{
 			var piece = Library.Create<Entity>( "ent_chesspiece" ) as ChessPiece;
-			piece.SetCell( cell_up, cell_side );
-			piece.SetType( type );
-
-			//if (type == 6 )
-			//{
-			//	(black ? black_player : white_player).King = piece;
-			//}
 
 			if ( black )
 				piece.SetBlack();
+
+			piece.SetCell( cell_up, cell_side );
+			piece.SetType( type );
 		}
 
 		public void SpawnPieces()
@@ -213,6 +239,76 @@ namespace Chess
 			player.Respawn();
 		}
 
+		public void Notify(string msg)
+		{
+			foreach ( ChessPlayer ply in Entity.All.OfType<ChessPlayer>() )
+			{
+				ply.DoNotify( To.Single(ply), msg );
+			}
+		}
+		
+		public void ResetGame()
+		{
+			SpawnPieces();
+			Playing = false;
+			TeamTurn = 1;
+			white_player = null;
+			black_player = null;
+		}
+
+		public async void WinnerCheck()
+		{
+			await Task.Delay(100);
+
+			var endGame = false;
+
+			foreach ( var king in Entity.All.OfType<ChessPiece>() )
+			{
+				if ( king.PieceType != 6 )
+					continue;
+
+				var hasMoves = king.GetSafeMoves().Count > 0;
+				var canBeSaved = false;
+				var inCheck = king.IsDangered;
+
+				if ( hasMoves )
+					continue;
+
+				foreach ( var piece in Entity.All.OfType<ChessPiece>() )
+				{
+					if ( piece.Team != king.Team || king == piece )
+						continue;
+
+					var shieldMoves = piece.CanShieldKingMoves();
+					if ( shieldMoves.Count > 0 || piece.CanSaveKing() )
+					{
+						canBeSaved = true;
+						break;
+					}
+				}
+
+				if ( !hasMoves && !canBeSaved )
+				{
+					if ( inCheck )
+					{
+						Notify( $"Checkmate! {(king.Team == 1 ? "Black" : "White")} team has won." );
+					}
+					else
+					{
+						Notify( $"Stalemate! Tied." );
+					}
+
+					endGame = true;
+					break;
+				}
+			}
+
+			if ( endGame )
+			{
+				ResetGame();
+			}
+		}
+
 		[ServerCmd( "make_move" )]
 		public static void MakeMove( int sel_up, int sel_side, int up, int side )
 		{
@@ -240,14 +336,41 @@ namespace Chess
 				var occupant = game.GetOccupant( up, side );
 
 				if ( occupant.IsValid() )
-					occupant.Delete();
+				{
+					Particles smoke = Particles.Create( "particles/explosion_smoke.vpcf" );
+					smoke.SetPosition(0, occupant.Position);
+					Sound.FromEntity( "chess_breakpiece", occupant );
+
+					occupant.Kill(); 
+				}
 
 				ent.SetCell( up, side );
 
-				if (!ent.HandleAfterMove())
+				foreach ( var piece in Entity.All.OfType<ChessPiece>() )
+				{
+					if ( piece.PieceType != 6 )
+						continue;
+
+					piece.IsDangered = piece.InDanger().IsValid();
+
+					piece.GlowActive = piece.IsDangered;
+					piece.GlowColor = Color.Red;
+
+				}
+
+				if ( !ent.HandleAfterMove() )
 					return;
 
 				game.TeamTurn = game.TeamTurn == 1 ? 2 : 1;
+
+				if ( game.LastMoved.IsValid())
+                {
+					game.LastMoved.GlowActive = false;
+				}
+
+				game.LastMoved = ent;
+				game.LastMoved.GlowActive = true;
+				game.LastMoved.GlowColor = "#34a1eb";
 			}
 		}
 
@@ -279,9 +402,8 @@ namespace Chess
 				pawn.Team = team;
 			}
 
-			if ( game.white_player.IsValid() && game.black_player.IsValid() || true)
+			if ( game.white_player.IsValid() && game.black_player.IsValid() )
 			{
-				//ChessGame.Current.SpawnPieces();
 				game.Playing = true;
 			}
 
@@ -309,10 +431,7 @@ namespace Chess
 			if ( game.white_player != pawn && game.black_player != pawn )
 				return;
 
-			game.white_player = null;
-			game.black_player = null;
-			game.Playing = false;
-			game.TeamTurn = 1;
+			game.ResetGame();
 		}
 
 		[ServerCmd( "promote_piece" )]
@@ -329,6 +448,18 @@ namespace Chess
 
 			pawn.SetPromotionScreen( false );
 
+			foreach ( var ent in Entity.All.OfType<ChessPiece>() )
+			{
+				if ( ent.PieceType != 6 )
+					continue;
+
+				ent.IsDangered = ent.InDanger().IsValid();
+
+				ent.GlowActive = ent.IsDangered;
+				ent.GlowColor = Color.Red;
+
+			}
+
 			game.TeamTurn = game.TeamTurn == 1 ? 2 : 1;
 		}
 
@@ -336,12 +467,44 @@ namespace Chess
 		[ServerCmd( "toggle_playing" )]
 		public static void TogglePlaying()
 		{
-			ChessGame.Current.Playing = !ChessGame.Current.Playing;
+			var game = ChessGame.Current;
+
+			if ( !game.debugging )
+				return;
+
+			game.Playing = !ChessGame.Current.Playing;
+		}
+
+		[ServerCmd( "notify" )]
+		public static void Notifitest(string msg)
+		{
+			var game = ChessGame.Current;
+
+			if ( !game.debugging )
+				return;
+
+			game.Notify(msg);
+		}
+
+		[ServerCmd( "test_checkmate" )]
+		public static void CheckMateTest()
+		{
+			var game = ChessGame.Current;
+
+			if ( !game.debugging )
+				return;
+
+			game.WinnerCheck();
 		}
 
 		[ServerCmd( "promotion_test" )]
 		public static void PromotionTest(int todo)
 		{
+			var game = ChessGame.Current;
+
+			if ( !game.debugging )
+				return;
+
 			var client = ConsoleSystem.Caller;
 			var pawn = client?.Pawn as ChessPlayer;
 

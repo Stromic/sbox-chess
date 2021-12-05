@@ -1,4 +1,5 @@
 ﻿using Sandbox;
+using System.Collections.Generic;
 
 namespace Chess
 {
@@ -22,6 +23,8 @@ namespace Chess
 			Animator = new StandardPlayerAnimator();
 			Camera = new ChessCamera();
 
+			EnableDrawing = false; // TODO: Move the player into a chair and have it so they are sitting by a table playing chess.
+
 			base.Respawn();
 		}
 
@@ -29,6 +32,17 @@ namespace Chess
 		public void SetPromotionScreen( bool active )
 		{
 			Event.Run( "SetPromotionScreen", active );
+		}
+
+		[ClientRpc]
+		public void DoNotify( string msg )
+		{
+			Event.Run( "ChessNotify", msg );
+		}
+
+		private int ConcatInt( int a, int b ) // Yeah very nice
+		{
+			return int.Parse( a.ToString() + b.ToString() );
 		}
 
 		public override void Simulate( Client cl )
@@ -63,47 +77,79 @@ namespace Chess
 						var game = ChessGame.Current;
 						var ply = Local.Pawn as ChessPlayer;
 
-						game.UnmarkCells();
+						GridBox hoveredCell = game.HoveredCell;
 
-						GridBox HoveredCell = game.HoveredCell;
-
-						if ( HoveredCell == null )
+						if ( hoveredCell == null )
 						{
 							game.SelectedCell = null;
+							game.UnmarkCells();
 							return;
-						}	
+						}
 
-						ChessPiece ent = game.GetOccupant( HoveredCell.upint, HoveredCell.sideint );
+						bool isMarkedCell = game.IsCellMarked( hoveredCell.upint, hoveredCell.sideint );
+
+						game.UnmarkCells();
+
+						ChessPiece ent = game.GetOccupant( hoveredCell.upint, hoveredCell.sideint );
+
+						bool isSameTeam = ent.IsValid() ? ent.Team == ply.Team : false;
+
+						if ( isSameTeam )
+							game.SelectedCell = null;
 
 						var sel_cell = game.SelectedCell;
+						ChessPiece sel_ent = sel_cell != null ? game.GetOccupant( sel_cell.upint, sel_cell.sideint ) : null;
 
 						var KingsDanger = ply.King?.InDanger();
 
-						bool CanSaveKing = KingsDanger.IsValid() && (ent.IsValid() && ent.CanSaveKing());
+						var ShieldKingBlockers = KingsDanger.IsValid() && ent.IsValid() ? ent.CanShieldKingMoves() : null;
+						bool canSaveKing = KingsDanger.IsValid() && (ent.IsValid() && (ent.CanSaveKing()));
+						bool isMyTurn = game.TeamTurn == ply.Team;
+						bool wantsToMove = sel_cell != null && isMarkedCell;
+						bool canShieldKing = ShieldKingBlockers?.Count > 0;
+						bool kingInDanger = KingsDanger.IsValid();
+						bool isKing = ent.IsValid() ? ent.PieceType == 6 && ent.Team == ply.Team : false ;
 
-						if ( sel_cell == null && ent.IsValid() && ent.Team != ply.Team || game.TeamTurn != ply.Team || (KingsDanger.IsValid() && ent.IsValid() && !CanSaveKing && (ent.PieceType != 6 || ent.GetSafeMoves().Count <= 0)) )
+						if (((ent.IsValid() && ent.PieceType == 6 && ent.GetSafeMoves().Count <= 0) || (kingInDanger && !canShieldKing && !canSaveKing) || !isSameTeam ) && (!wantsToMove && (!isKing || ent.GetSafeMoves().Count <= 0)) || !isMyTurn )
 						{
 							game.SelectedCell = null;
+							return;
+						}
+
+						if ( canSaveKing )
+							game.SetMarkedCell( KingsDanger.UpInt, KingsDanger.SideInt, true, true );
+
+						if ( ent.IsValid() )
+						{
+							game.SelectedCell = hoveredCell;
+							game.SetMarkedCell( hoveredCell.upint, hoveredCell.sideint, true );
+						}
+
+						if ( KingsDanger.IsValid() && ShieldKingBlockers?.Count > 0 )
+						{
+							foreach ( KeyValuePair<int, bool> move in ShieldKingBlockers )
+							{
+								string num_str = move.Key.ToString();
+								int up = (int)(num_str[0]) - 48;
+								int side = (int)(num_str[1]) - 48;
+
+								game.SetMarkedCell( up, side, true, false );
+							}
+
 							return;
 						}
 
 						if ( sel_cell != null )
 						{
-							ChessPiece sel_ent = game.GetOccupant( sel_cell.upint, sel_cell.sideint );
+							game.SelectedCell = null;
 
-							if (sel_ent.IsValid() && sel_ent.CanMove( HoveredCell.upint, HoveredCell.sideint ) )
+							if ( sel_ent.IsValid() && isMarkedCell )
 							{
-								ConsoleSystem.Run( "make_move", sel_cell.upint, sel_cell.sideint, HoveredCell.upint, HoveredCell.sideint );
-
-								game.SelectedCell = null;
+								ConsoleSystem.Run( "make_move", sel_cell.upint, sel_cell.sideint, hoveredCell.upint, hoveredCell.sideint );
 
 								return;
 							}
 						}
-
-						game.SelectedCell = HoveredCell;
-
-						game.SetMarkedCell( HoveredCell.upint, HoveredCell.sideint, true );
 						
 						if ( ent.IsValid() )
 						{
@@ -111,15 +157,9 @@ namespace Chess
 							{
 								ent.GetSafeMoves( true );
 							}
-							else
+							else if ( !canSaveKing )
 							{
-								if ( CanSaveKing ) {
-									game.SetMarkedCell( KingsDanger.UpInt, KingsDanger.SideInt, true, true );
-								} 
-								else
-								{
-									ent.GetMoves( true );
-								}
+								ent.GetMoves( true );
 							}
 						}
 					}

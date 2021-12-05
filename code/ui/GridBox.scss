@@ -1,15 +1,23 @@
-﻿.marked {
-    background-color: rgba(0, 128, 0, 0.4);
-    border: 42px solid green;
+﻿gridbox{
+    border-radius: 50%;
+    transition: all .1s ease-in-out;
+    opacity: 0;
+}
+
+.marked {
+    background-color: #38b542;
+    border: 38px solid #108d1a;
     opacity: 1;
 }
 
 .kill {
-    background-color: rgba(128, 0, 0, 0.4);
-    border: 42px solid red;
+    background-color: #ad2d24;
+    border: 38px solid #850f06;
+    opacity: 1;
 }
 
 .hovered {
-    background-color: rgba(0, 0, 128, 0.4);
-    border: 42px solid blue;
+    background-color: #2b5996;
+    border: 38px solid #03316e;
+    opacity: 1;
 }
