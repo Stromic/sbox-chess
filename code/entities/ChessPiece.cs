@@ -91,7 +91,7 @@ namespace Chess
 			var game = ChessGame.Current;
 			var king = (Team == 1 ? game.white_player : game.black_player)?.King;
 			var danger = king?.InDanger();
-			var moves = GetMoves();
+			var moves = GetMoves(false, false, null, null, true);
 
 			if ( danger.IsValid() )
 			{
@@ -141,6 +141,8 @@ namespace Chess
 			SideInt = side;
 
 			Position = ChessGame.Current.GetPiecePosition( up, side );
+
+			ChessGame.Current.WinnerCheck();
 
 			await Task.Delay(30);
 
@@ -370,6 +372,11 @@ namespace Chess
 
 			var king = Team == 1 ? game.white_king : game.black_king;
 
+			var already_dangered = king.InDanger();
+
+			if ( already_dangered.IsValid() )
+				return false;
+
 			virtualized_up = up;
 			virtualized_side = side;
 
@@ -391,7 +398,7 @@ namespace Chess
 			bool IsBlack = Team == 2;
 			if ( PieceType == 1 ) // Pawn
 			{
-				if ( !ChessGame.Current.IsCellOccupied( UpInt + (IsBlack ? 1 : -1), SideInt ) && !ignore_blocks )
+				if ( !ChessGame.Current.IsCellOccupied( UpInt + (IsBlack ? 1 : -1), SideInt ) && !ignore_blocks && (!ignore_putdanger && !WillMovePutKingInDanger( UpInt + (IsBlack ? 1 : -1), SideInt )) )
 				{
 					moves.Add( ConcatInt( UpInt + (IsBlack ? 1 : -1), SideInt ) );
 

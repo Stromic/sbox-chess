@@ -20,7 +20,7 @@ namespace Chess
 		[Net]
 		public ChessPlayer black_player { get; set; }
 
-		[Net, Change]
+		[Net]
 		public int TeamTurn { get; set; } = 1;
 		
 		[Net]
@@ -34,15 +34,7 @@ namespace Chess
 
 		private ChessPiece LastMoved { get; set; }
 
-		private bool debugging = false;
-
-		public void OnTeamTurnChanged( int oldval, int newval )
-		{
-			if ( IsClient )
-				return;
-
-			WinnerCheck();
-		}
+		private bool debugging = true;
 
 		public ChessGame()
 		{
@@ -258,6 +250,9 @@ namespace Chess
 
 		public async void WinnerCheck()
 		{
+			if ( !Playing )
+				return;
+
 			await Task.Delay(100);
 
 			var endGame = false;
@@ -276,7 +271,7 @@ namespace Chess
 
 				foreach ( var piece in Entity.All.OfType<ChessPiece>() )
 				{
-					if ( piece.Team != king.Team || king == piece )
+					if ( piece.Team != king.Team || king == piece || piece.Killed )
 						continue;
 
 					var shieldMoves = piece.CanShieldKingMoves();
@@ -509,17 +504,6 @@ namespace Chess
 			var pawn = client?.Pawn as ChessPlayer;
 
 			pawn.SetPromotionScreen( Convert.ToBoolean(todo) );
-		}
-
-		[Event.Hotload]
-		public void TestShit()
-		{
-			var startPos = new Vector3(0f,0f,2000f);
-			var endPos = new Vector3( 0f, 0f, 0f );
-
-			var tr = Trace.Ray( startPos, endPos ).Run();
-
-			Log.Info(tr.EndPos);
 		}
 	}
 }
