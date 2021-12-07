@@ -34,7 +34,7 @@ namespace Chess
 
 		private ChessPiece LastMoved { get; set; }
 
-		private bool debugging = true;
+		private bool debugging = false;
 
 		public ChessGame()
 		{
@@ -456,6 +456,8 @@ namespace Chess
 			}
 
 			game.TeamTurn = game.TeamTurn == 1 ? 2 : 1;
+
+			game.WinnerCheck();
 		}
 
 		// TEST CMDS
