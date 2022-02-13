@@ -3,13 +3,11 @@
 	using Sandbox;
 	using Sandbox.UI;
 
-	public class GridBox : WorldPanel
+	public partial class GridBox : WorldPanel
 	{
 		public bool IsHovered { get; set; }
 		public int upint { get; set; } = 1;
-		public int sideint { get; set; } = 1;
-		
-		[Sandbox.Net]
+		public int sideint { get; set; } = 1;		
 		public bool Marked { get; set; }
 		public int size = 2000;
 
